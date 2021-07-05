@@ -1,0 +1,38 @@
+name: Make unity package
+
+on:
+  workflow_dispatch:
+
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+jobs:
+  makeUnityPackage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+          
+      - name: Cache Library Folder
+        uses: actions/cache@v1.1.0
+        with:
+          path: ./Library
+          key: Library-Path
+          restore-keys: |
+            Library-Path
+                        
+      #- name: Execute Unity method
+      #  uses: game-ci/unity-test-runner@v2
+      #  id: tests
+      #  with:
+      #    unityVersion: ${{ secrets.UNITY_VERSION }}
+      #    customParameters: -executeMethod ResourceStatistics.Editor.ScanAll
+#
+      #- name: Commit resource statistics result 	
+      #  uses: EndBug/add-and-commit@v7	
+      #  with:	
+      #    author_name: mousedoc	
+      #    author_email: sangyun3631@gmail.com	
+      #    message: '[ResourceStatistics] Update result - ${{ github.sha }}'	
+      #    add: ./ResourceStatistics
