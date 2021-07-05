@@ -144,7 +144,7 @@ namespace ResourceStatistics
         /// <returns></returns>
         public static float GetMemorySize(Object obj)
         {
-            return UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(obj);
+            return UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(obj) / 1024f;
         }
     }
 }
