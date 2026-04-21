@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEditor;
+using UnityEngine;
 using UnityEditor.Experimental;
 using UnityEditor.U2D;
 using UnityEngine.U2D;
@@ -39,6 +40,12 @@ namespace ResourceStatistics
 
             foreach (var platform in Platforms)
                 platformMap[platform] = spriteAtlas.GetPlatformSettings(platform);
+        }
+
+        public override void Dispose()
+        {
+            if (spriteAtlas != null)
+                Resources.UnloadAsset(spriteAtlas);
         }
 
         public Dictionary<string, string> GetDefaultFields()

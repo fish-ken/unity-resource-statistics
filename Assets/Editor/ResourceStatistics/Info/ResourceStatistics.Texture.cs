@@ -44,6 +44,12 @@ namespace ResourceStatistics
                 platformMap[platform] = textureImporter.GetPlatformTextureSettings(platform);
         }
 
+        public override void Dispose()
+        {
+            if (texture != null)
+                Resources.UnloadAsset(texture);
+        }
+
         public Dictionary<string, string> GetDefaultFields()
         {
             var fieldMap = new Dictionary<string, string>

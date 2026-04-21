@@ -40,6 +40,11 @@ namespace ResourceStatistics
             }
         }
 
+        public override void Dispose()
+        {
+            gameObject = null;
+        }
+
         public Dictionary<string, string> GetDefaultFields()
         {
             var fieldMap = new Dictionary<string, string>

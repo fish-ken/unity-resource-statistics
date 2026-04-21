@@ -37,6 +37,13 @@ namespace ResourceStatistics
             }
         }
 
+        public override void Dispose()
+        {
+            foreach (var clip in subAnimationClips)
+                if (clip != null) Resources.UnloadAsset(clip);
+            if (animationClip != null) Resources.UnloadAsset(animationClip);
+        }
+
         private Dictionary<string, string> GetAnimationClipFileds(string assetPath, AnimationClip clip)
         {
             if (animationClip == null)

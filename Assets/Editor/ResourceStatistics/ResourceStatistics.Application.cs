@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEngine;
 
 namespace ResourceStatistics
 {
@@ -110,7 +111,7 @@ namespace ResourceStatistics
 
                 try
                 {
-                    var info = new TextureInfo(importer);
+                    using var info = new TextureInfo(importer);
 
                     #region Default
 
@@ -179,7 +180,7 @@ namespace ResourceStatistics
 
                 try
                 {
-                    var info = new SpriteAtlasInfo(importer);
+                    using var info = new SpriteAtlasInfo(importer);
 
                     #region Default
 
@@ -243,7 +244,7 @@ namespace ResourceStatistics
 
                 try
                 {
-                    var info = new AnimationInfo(importer);
+                    using var info = new AnimationInfo(importer);
 
                     #region Default
 
@@ -286,6 +287,7 @@ namespace ResourceStatistics
         {
             var paths = AssetType.Model.ToAssetPaths(filter);
             var addColumn = false;
+            var counter = 0;
 
             using var defaultWriter = Helper.OpenCsvWriter(AssetType.Model, "Default");
 
@@ -298,7 +300,7 @@ namespace ResourceStatistics
 
                 try
                 {
-                    var info = new ModelInfo(importer);
+                    using var info = new ModelInfo(importer);
 
                     #region Default
 
@@ -319,7 +321,13 @@ namespace ResourceStatistics
                 {
                     Debug.LogError(exception);
                 }
+
+                // GameObject은 Resources.UnloadAsset 불가 → 주기적으로 일괄 해제
+                if (++counter % 50 == 0)
+                    EditorUtility.UnloadUnusedAssetsImmediate(false);
             }
+
+            EditorUtility.UnloadUnusedAssetsImmediate(false);
         }
 
         /// <summary>
@@ -346,7 +354,7 @@ namespace ResourceStatistics
 
                 try
                 {
-                    var info = new AudioClipInfo(importer);
+                    using var info = new AudioClipInfo(importer);
 
                     #region Default
 

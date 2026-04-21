@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 
 namespace ResourceStatistics
 {
-    public abstract class AssetInfo
+    public abstract class AssetInfo : IDisposable
     {
         protected AssetImporter Importer { get; private set; }
 
@@ -22,6 +23,8 @@ namespace ResourceStatistics
         {
             Importer = importer;
         }
+
+        public virtual void Dispose() { }
 
         protected void Log(Dictionary<string, string> fieldMap)
         {

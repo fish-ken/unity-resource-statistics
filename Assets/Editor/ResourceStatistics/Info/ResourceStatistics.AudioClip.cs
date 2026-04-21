@@ -42,6 +42,12 @@ namespace ResourceStatistics
             }
         }
 
+        public override void Dispose()
+        {
+            if (audioClip != null)
+                Resources.UnloadAsset(audioClip);
+        }
+
         public Dictionary<string, string> GetDefaultFields()
         {
             var defaultSetting = audioClipImporter.defaultSampleSettings;
