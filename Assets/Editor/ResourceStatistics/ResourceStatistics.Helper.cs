@@ -152,16 +152,44 @@ namespace ResourceStatistics
                 return string.Format(FilterNameFormat, assetType, name);
         }
 
+        private static readonly string[] IgnorePrefixes = new[]
+        {
+            "Packages/",
+            "Assets/AmplifyBloom/",
+            "Assets/ShaderForge/Example Assets/",
+            "Assets/Editor Default Resources/",
+            "Assets/Standard Assets/",
+            "Assets/Gizmos/",
+            "Assets/NGUI/Examples/",
+            "Assets/Third Party/",
+            "Assets/Standard Assets (Mobile)/",
+        };
+
+        private static readonly string[] IgnoreContains = new[]
+        {
+            "Editor/",
+        };
+
         /// <summary>
         /// Check if the path is ignored
         /// </summary>
         private static bool IsIgnorePath(string path)
         {
-            if (path.StartsWith("Packages/"))
-                return true;
+            foreach (var prefix in IgnorePrefixes)
+            {
+                if (path.StartsWith(prefix))
+                {
+                    return true;
+                }
+            }
 
-            if (path.Contains("Editor/"))
-                return true;
+            foreach (var keyword in IgnoreContains)
+            {
+                if (path.Contains(keyword))
+                {
+                    return true;
+                }
+            }
 
             return false;
         }
@@ -221,6 +249,7 @@ namespace ResourceStatistics
             var fileName = $"{assetType.GetExportPath()}/{name}.csv";
             return new StreamWriter(fileName, false, Encoding.UTF8);
         }
+
 
         /// <summary>
         /// Export critical log by markdown

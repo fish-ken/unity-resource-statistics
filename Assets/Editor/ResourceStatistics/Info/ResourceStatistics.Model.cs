@@ -19,6 +19,8 @@ namespace ResourceStatistics
 
         private int triangleCount = 0;
 
+        private long importedMemoryBytes = 0;
+
         public ModelInfo(AssetImporter importer) : base(importer)
         {
             Initialize();
@@ -37,6 +39,7 @@ namespace ResourceStatistics
 
                 vertexCount += meshFilter.sharedMesh.vertexCount;
                 triangleCount += meshFilter.sharedMesh.triangles.Length;
+                importedMemoryBytes += UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(meshFilter.sharedMesh);
             }
         }
 
@@ -64,8 +67,8 @@ namespace ResourceStatistics
                 ["Import Normals"] = modelImporter.importNormals.ToString(),
                 ["Import Tangents"] = modelImporter.importTangents.ToString(),
                 ["Original Size(kB)"] = Helper.GetFileSize(FullPath).ToString(),
-                ["Imported Size(kB)"] = Helper.GetMemorySize_kB(gameObject).ToString(),
-                ["Imported Size(MB)"] = Helper.GetMemorySize_MB(gameObject).ToString(),
+                ["Imported Size(kB)"] = (importedMemoryBytes / 1024f).ToString(),
+                ["Imported Size(MB)"] = (importedMemoryBytes / (1024f * 1024f)).ToString(),
             };
 
             #region Critical logs

@@ -27,13 +27,11 @@ namespace ResourceStatistics
             subAnimationClips.Clear();
 
             var assets = AssetDatabase.LoadAllAssetsAtPath(Importer.assetPath);
-            var clips = new List<AnimationClip>();
             foreach (var asset in assets)
             {
-                if (asset is AnimationClip clip)
-                {
+                // 메인 클립과 동일한 오브젝트는 제외 (GetDefaultFields에서 이미 기록)
+                if (asset is AnimationClip clip && clip != animationClip)
                     subAnimationClips.Add(clip);
-                }
             }
         }
 
@@ -46,7 +44,7 @@ namespace ResourceStatistics
 
         private Dictionary<string, string> GetAnimationClipFileds(string assetPath, AnimationClip clip)
         {
-            if (animationClip == null)
+            if (clip == null)
             {
                 Debug.Log(assetPath);
             }
@@ -56,18 +54,18 @@ namespace ResourceStatistics
                 // Basic
                 ["Path/Name"] = assetPath,
 
-                // Animation 
-                ["Framerate"] = ((int)animationClip.frameRate).ToString(),
-                ["Length"] = animationClip.length.ToString(),
+                // Animation
+                ["Framerate"] = ((int)clip.frameRate).ToString(),
+                ["Length"] = clip.length.ToString(),
 
                 // Size
                 ["Original Size(kB)"] = Helper.GetFileSize(FullPath).ToString(),
-                ["Imported Size(kB)"] = Helper.GetMemorySize_kB(animationClip).ToString(),
-                ["Imported Size(MB)"] = Helper.GetMemorySize_MB(animationClip).ToString(),
+                ["Imported Size(kB)"] = Helper.GetMemorySize_kB(clip).ToString(),
+                ["Imported Size(MB)"] = Helper.GetMemorySize_MB(clip).ToString(),
             };
 
             if (Editor.EnableLog)
-                Debug.Log(animationClip.ToJson());
+                Debug.Log(clip.ToJson());
 
             return fieldMap;
         }

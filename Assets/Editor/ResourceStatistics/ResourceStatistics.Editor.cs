@@ -62,6 +62,7 @@ namespace ResourceStatistics
                     Application.Scan(type);
                 }
             }
+
         }
     }
 }
