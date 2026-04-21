@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System.Collections.Generic;
+using UnityEditor;
 
 namespace ResourceStatistics
 {
@@ -13,13 +14,27 @@ namespace ResourceStatistics
                 if (Importer == null)
                     return null;
 
-                return $"{PathExtension.ProjectRootPath}/{Importer.assetPath}";
+                return $"{Util.ProjectRootPath}/{Importer.assetPath}";
             }
         }
 
         protected AssetInfo(AssetImporter importer)
         {
             Importer = importer;
+        }
+
+        protected void Log(Dictionary<string, string> fieldMap)
+        {
+            if (Editor.EnableLog == false)
+                return;
+
+            if (fieldMap == null)
+            {
+                Debug.LogError($"Error - {nameof(Log)} : fieldMap is null");
+                return;
+            }
+
+            Debug.Log(fieldMap.ToJson());
         }
     }
 }

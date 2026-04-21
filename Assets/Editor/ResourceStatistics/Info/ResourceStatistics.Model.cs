@@ -58,13 +58,19 @@ namespace ResourceStatistics
                 ["Optimize Mesh/Polygon"] = modelImporter.optimizeMeshPolygons.ToString(),
                 ["Import Normals"] = modelImporter.importNormals.ToString(),
                 ["Import Tangents"] = modelImporter.importTangents.ToString(),
-                ["Original Size(KB)"] = Helper.GetFileSize(FullPath).ToString(),
-                ["Imported Size(KB)"] = Helper.GetMemorySize(gameObject).ToString(),
+                ["Original Size(kB)"] = Helper.GetFileSize(FullPath).ToString(),
+                ["Imported Size(kB)"] = Helper.GetMemorySize_kB(gameObject).ToString(),
+                ["Imported Size(MB)"] = Helper.GetMemorySize_MB(gameObject).ToString(),
             };
 
-            if (Editor.EnableLog)
-                Debug.Log(fieldMap.ToJson());
+            #region Critical logs
 
+            if (modelImporter.isReadable)
+                Application.AddCriticalLog("Write Enabled", Importer.assetPath);
+
+            #endregion
+
+            Log(fieldMap);
             return fieldMap;
         }
     }

@@ -62,13 +62,21 @@ namespace ResourceStatistics
                 ["Original Width/Height"] = $"{texture.width}x{texture.height}",
 
                 // Size
-                ["Original Size(KB)"] = Helper.GetFileSize(FullPath).ToString(),
-                ["Imported Size(KB)"] = Helper.GetMemorySize(texture).ToString(),
+                ["Original Size(kB)"] = Helper.GetFileSize(FullPath).ToString(),
+                ["Imported Size(kB)"] = Helper.GetMemorySize_kB(texture).ToString(),
+                ["Imported Size(MB)"] = Helper.GetMemorySize_MB(texture).ToString(),
             };
 
-            if (Editor.EnableLog)
-                Debug.Log(fieldMap.ToJson());
+            #region Critical logs
 
+            if (textureImporter.isReadable)
+                Application.AddCriticalLog("Write Enabled", textureImporter.assetPath);
+            if (textureImporter.mipmapEnabled)
+                Application.AddCriticalLog("Enabled Mip Maps", textureImporter.assetPath);
+
+            #endregion
+
+            Log(fieldMap);
             return fieldMap;
         }
 
@@ -98,9 +106,7 @@ namespace ResourceStatistics
             if (platform == Platforms[0])
                 fieldMap["Android ETC2 Fallback override"] = platformImporter.androidETC2FallbackOverride.ToString();
 
-            if (Editor.EnableLog)
-                Debug.Log(fieldMap.ToJson());
-
+            Log(fieldMap);
             return fieldMap;
         }
     }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEditor;
 
@@ -10,11 +12,48 @@ namespace ResourceStatistics
     public class Application
     {
         /// <summary>
+        /// Critical log container
+        /// </summary>
+        private static Dictionary<string, StringBuilder> criticalLogMap = new Dictionary<string, StringBuilder>();
+
+        /// <summary>
+        /// Record critical log
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        public static void AddCriticalLog(string category, string name)
+        {
+            if (criticalLogMap.ContainsKey(category) == false)
+                criticalLogMap[category] = new StringBuilder();
+
+            criticalLogMap[category].AppendLine(name);
+        }
+
+        /// <summary>
+        /// Called before scan
+        /// </summary>
+        private void OnPreScan()
+        {
+            criticalLogMap.Clear();
+        }
+
+        /// <summary>
+        /// Called after scan
+        /// </summary>
+        /// <param name="assetType"></param>
+        private void OnPostScan(AssetType assetType)
+        {
+            ExportCriticalLog(assetType);
+        }
+
+        /// <summary>
         /// Scan the asset type
         /// </summary>
         /// <param name="assetType"></param>
         public void Scan(AssetType assetType, string filter = null)
         {
+            OnPreScan();
+
             assetType.ValidateExportPath();
 
             switch (assetType)
@@ -40,9 +79,11 @@ namespace ResourceStatistics
                     break;
 
                 default:
-                    UnityEngine.Debug.LogError($"[ResourceStatistics.Application] Not implemented asset type {assetType}");
+                    Debug.LogError($"[ResourceStatistics.Application] Not implemented asset type {assetType}");
                     break;
             }
+
+            OnPostScan(assetType);
         }
 
         /// <summary>
@@ -50,12 +91,13 @@ namespace ResourceStatistics
         /// </summary>
         private void ScanTexture(string filter = null)
         {
-            var defaultCsv = new StringBuilder();
-            var platformCsvMap = new Dictionary<string, StringBuilder>();
             var addColumnChecker = new HashSet<string>();
+            var platformWriterMap = new Dictionary<string, StreamWriter>();
 
             foreach (var platform in TextureInfo.Platforms)
-                platformCsvMap[platform] = new StringBuilder();
+                platformWriterMap[platform] = Helper.OpenCsvWriter(AssetType.Texture, platform);
+
+            using var defaultWriter = Helper.OpenCsvWriter(AssetType.Texture, "Default");
 
             var paths = AssetType.Texture.ToAssetPaths(filter);
 
@@ -66,49 +108,51 @@ namespace ResourceStatistics
                 if (importer == null)
                     continue;
 
-                var info = new TextureInfo(importer);
-
-                #region Default
-
-                var defaultField = info.GetDefaultFields();
-
-                // Column
-                if (addColumnChecker.Contains("Default") == false)
+                try
                 {
-                    addColumnChecker.Add("Default");
-                    defaultCsv.AppendLine(defaultField.Keys.ToCsvLine());
-                }
+                    var info = new TextureInfo(importer);
 
-                defaultCsv.AppendLine(defaultField.Values.ToCsvLine());
+                    #region Default
 
-                #endregion Default
-
-                #region Platform
-
-                foreach (var platform in TextureInfo.Platforms)
-                {
-                    var platformField = info.GetPlatformFields(platform);
+                    var defaultField = info.GetDefaultFields();
 
                     // Column
-                    if (addColumnChecker.Contains(platform) == false)
+                    if (addColumnChecker.Contains("Default") == false)
                     {
-                        addColumnChecker.Add(platform);
-                        platformCsvMap[platform].AppendLine(platformField.Keys.ToCsvLine());
+                        addColumnChecker.Add("Default");
+                        defaultWriter.WriteLine(defaultField.Keys.ToCsvLine());
                     }
 
-                    platformCsvMap[platform].AppendLine(platformField.Values.ToCsvLine());
-                }
+                    defaultWriter.WriteLine(defaultField.Values.ToCsvLine());
 
-                #endregion Platform
+                    #endregion Default
+
+                    #region Platform
+
+                    foreach (var platform in TextureInfo.Platforms)
+                    {
+                        var platformField = info.GetPlatformFields(platform);
+
+                        // Column
+                        if (addColumnChecker.Contains(platform) == false)
+                        {
+                            addColumnChecker.Add(platform);
+                            platformWriterMap[platform].WriteLine(platformField.Keys.ToCsvLine());
+                        }
+
+                        platformWriterMap[platform].WriteLine(platformField.Values.ToCsvLine());
+                    }
+
+                    #endregion Platform
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                }
             }
 
-            #region Export
-
-            Helper.ExportResult(AssetType.Texture, "Default", defaultCsv);
-            foreach (var platform in TextureInfo.Platforms)
-                Helper.ExportResult(AssetType.Texture, platform, platformCsvMap[platform]);
-
-            #endregion Export
+            foreach (var writer in platformWriterMap.Values)
+                writer.Dispose();
         }
 
         /// <summary>
@@ -116,12 +160,13 @@ namespace ResourceStatistics
         /// </summary>
         private void ScanSpriteAtlas(string filter = null)
         {
-            var defaultCsv = new StringBuilder();
-            var platformCsvMap = new Dictionary<string, StringBuilder>();
             var addColumnChecker = new HashSet<string>();
+            var platformWriterMap = new Dictionary<string, StreamWriter>();
 
             foreach (var platform in SpriteAtlasInfo.Platforms)
-                platformCsvMap[platform] = new StringBuilder();
+                platformWriterMap[platform] = Helper.OpenCsvWriter(AssetType.SpriteAtlas, platform);
+
+            using var defaultWriter = Helper.OpenCsvWriter(AssetType.SpriteAtlas, "Default");
 
             var paths = AssetType.SpriteAtlas.ToAssetPaths(filter);
 
@@ -132,49 +177,51 @@ namespace ResourceStatistics
                 if (importer == null)
                     continue;
 
-                var info = new SpriteAtlasInfo(importer);
-
-                #region Default
-
-                var defaultField = info.GetDefaultFields();
-
-                // Column
-                if (addColumnChecker.Contains("Default") == false)
+                try
                 {
-                    addColumnChecker.Add("Default");
-                    defaultCsv.AppendLine(defaultField.Keys.ToCsvLine());
-                }
+                    var info = new SpriteAtlasInfo(importer);
 
-                defaultCsv.AppendLine(defaultField.Values.ToCsvLine());
+                    #region Default
 
-                #endregion Default
-
-                #region Platform
-
-                foreach (var platform in SpriteAtlasInfo.Platforms)
-                {
-                    var platformField = info.GetPlatformFields(platform);
+                    var defaultField = info.GetDefaultFields();
 
                     // Column
-                    if (addColumnChecker.Contains(platform) == false)
+                    if (addColumnChecker.Contains("Default") == false)
                     {
-                        addColumnChecker.Add(platform);
-                        platformCsvMap[platform].AppendLine(platformField.Keys.ToCsvLine());
+                        addColumnChecker.Add("Default");
+                        defaultWriter.WriteLine(defaultField.Keys.ToCsvLine());
                     }
 
-                    platformCsvMap[platform].AppendLine(platformField.Values.ToCsvLine());
-                }
+                    defaultWriter.WriteLine(defaultField.Values.ToCsvLine());
 
-                #endregion Platform
+                    #endregion Default
+
+                    #region Platform
+
+                    foreach (var platform in SpriteAtlasInfo.Platforms)
+                    {
+                        var platformField = info.GetPlatformFields(platform);
+
+                        // Column
+                        if (addColumnChecker.Contains(platform) == false)
+                        {
+                            addColumnChecker.Add(platform);
+                            platformWriterMap[platform].WriteLine(platformField.Keys.ToCsvLine());
+                        }
+
+                        platformWriterMap[platform].WriteLine(platformField.Values.ToCsvLine());
+                    }
+
+                    #endregion Platform
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                }
             }
 
-            #region Export
-
-            Helper.ExportResult(AssetType.SpriteAtlas, "Default", defaultCsv);
-            foreach (var platform in SpriteAtlasInfo.Platforms)
-                Helper.ExportResult(AssetType.SpriteAtlas, platform, platformCsvMap[platform]);
-
-            #endregion Export
+            foreach (var writer in platformWriterMap.Values)
+                writer.Dispose();
         }
 
         /// <summary>
@@ -183,8 +230,9 @@ namespace ResourceStatistics
         private void ScanAnimation(string filter = null)
         {
             var paths = AssetType.Animation.ToAssetPaths(filter);
-            var defaultCsv = new StringBuilder();
             var addColumn = false;
+
+            using var defaultWriter = Helper.OpenCsvWriter(AssetType.Animation, "Default");
 
             foreach (var path in paths)
             {
@@ -193,29 +241,42 @@ namespace ResourceStatistics
                 if (importer == null)
                     continue;
 
-                var info = new AnimationInfo(importer);
-
-                #region Default
-
-                var defaultField = info.GetDefaultFields();
-
-                // Column
-                if (addColumn == false)
+                try
                 {
-                    addColumn = true;
-                    defaultCsv.AppendLine(defaultField.Keys.ToCsvLine());
+                    var info = new AnimationInfo(importer);
+
+                    #region Default
+
+                    var defaultField = info.GetDefaultFields();
+                    var subAssetDefaultFiles = info.GetSubAssetDefaultFields();
+
+                    // Main
+                    if (addColumn == false)
+                    {
+                        addColumn = true;
+                        defaultWriter.WriteLine(defaultField.Keys.ToCsvLine());
+                    }
+                    defaultWriter.WriteLine(defaultField.Values.ToCsvLine());
+
+                    // Sub
+                    foreach(var subAssetField in subAssetDefaultFiles)
+                    {
+                        // Column
+                        if (addColumn == false)
+                        {
+                            addColumn = true;
+                            defaultWriter.WriteLine(subAssetField.Keys.ToCsvLine());
+                        }
+                        defaultWriter.WriteLine(subAssetField.Values.ToCsvLine());
+                    }
+
+                    #endregion Default
                 }
-
-                defaultCsv.AppendLine(defaultField.Values.ToCsvLine());
-
-                #endregion Default
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                }
             }
-
-            #region Export
-
-            Helper.ExportResult(AssetType.Animation, "Default", defaultCsv);
-
-            #endregion Export
         }
 
         /// <summary>
@@ -224,8 +285,9 @@ namespace ResourceStatistics
         private void ScanModel(string filter = null)
         {
             var paths = AssetType.Model.ToAssetPaths(filter);
-            var defaultCsv = new StringBuilder();
             var addColumn = false;
+
+            using var defaultWriter = Helper.OpenCsvWriter(AssetType.Model, "Default");
 
             foreach (var path in paths)
             {
@@ -234,29 +296,30 @@ namespace ResourceStatistics
                 if (importer == null)
                     continue;
 
-                var info = new ModelInfo(importer);
-
-                #region Default
-
-                var defaultField = info.GetDefaultFields();
-
-                // Column
-                if (addColumn == false)
+                try
                 {
-                    addColumn = true;
-                    defaultCsv.AppendLine(defaultField.Keys.ToCsvLine());
+                    var info = new ModelInfo(importer);
+
+                    #region Default
+
+                    var defaultField = info.GetDefaultFields();
+
+                    // Column
+                    if (addColumn == false)
+                    {
+                        addColumn = true;
+                        defaultWriter.WriteLine(defaultField.Keys.ToCsvLine());
+                    }
+
+                    defaultWriter.WriteLine(defaultField.Values.ToCsvLine());
+
+                    #endregion Default
                 }
-
-                defaultCsv.AppendLine(defaultField.Values.ToCsvLine());
-
-                #endregion Default
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                }
             }
-
-            #region Export
-
-            Helper.ExportResult(AssetType.Model, "Default", defaultCsv);
-
-            #endregion Export
         }
 
         /// <summary>
@@ -264,12 +327,13 @@ namespace ResourceStatistics
         /// </summary>
         private void ScanAudioClip(string filter = null)
         {
-            var defaultCsv = new StringBuilder();
-            var platformCsvMap = new Dictionary<string, StringBuilder>();
             var addColumnChecker = new HashSet<string>();
+            var platformWriterMap = new Dictionary<string, StreamWriter>();
 
             foreach (var platform in AudioClipInfo.Platforms)
-                platformCsvMap[platform] = new StringBuilder();
+                platformWriterMap[platform] = Helper.OpenCsvWriter(AssetType.AudioClip, platform);
+
+            using var defaultWriter = Helper.OpenCsvWriter(AssetType.AudioClip, "Default");
 
             var paths = AssetType.AudioClip.ToAssetPaths(filter);
 
@@ -280,49 +344,63 @@ namespace ResourceStatistics
                 if (importer == null)
                     continue;
 
-                var info = new AudioClipInfo(importer);
-
-                #region Default
-
-                var defaultField = info.GetDefaultFields();
-
-                // Column
-                if (addColumnChecker.Contains("Default") == false)
+                try
                 {
-                    addColumnChecker.Add("Default");
-                    defaultCsv.AppendLine(defaultField.Keys.ToCsvLine());
-                }
+                    var info = new AudioClipInfo(importer);
 
-                defaultCsv.AppendLine(defaultField.Values.ToCsvLine());
+                    #region Default
 
-                #endregion Default
-
-                #region Platform
-
-                foreach (var platform in AudioClipInfo.Platforms)
-                {
-                    var platformField = info.GetPlatformFields(platform);
+                    var defaultField = info.GetDefaultFields();
 
                     // Column
-                    if (addColumnChecker.Contains(platform) == false)
+                    if (addColumnChecker.Contains("Default") == false)
                     {
-                        addColumnChecker.Add(platform);
-                        platformCsvMap[platform].AppendLine(platformField.Keys.ToCsvLine());
+                        addColumnChecker.Add("Default");
+                        defaultWriter.WriteLine(defaultField.Keys.ToCsvLine());
                     }
 
-                    platformCsvMap[platform].AppendLine(platformField.Values.ToCsvLine());
-                }
+                    defaultWriter.WriteLine(defaultField.Values.ToCsvLine());
 
-                #endregion Platform
+                    #endregion Default
+
+                    #region Platform
+
+                    foreach (var platform in AudioClipInfo.Platforms)
+                    {
+                        var platformField = info.GetPlatformFields(platform);
+
+                        // Column
+                        if (addColumnChecker.Contains(platform) == false)
+                        {
+                            addColumnChecker.Add(platform);
+                            platformWriterMap[platform].WriteLine(platformField.Keys.ToCsvLine());
+                        }
+
+                        platformWriterMap[platform].WriteLine(platformField.Values.ToCsvLine());
+                    }
+
+                    #endregion Platform
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(exception);
+                }
             }
 
-            #region Export
+            foreach (var writer in platformWriterMap.Values)
+                writer.Dispose();
+        }
 
-            Helper.ExportResult(AssetType.AudioClip, "Default", defaultCsv);
-            foreach (var platform in AudioClipInfo.Platforms)
-                Helper.ExportResult(AssetType.AudioClip, platform, platformCsvMap[platform]);
+        /// <summary>
+        /// Export critical log
+        /// </summary>
+        /// <param name="assetType"></param>
+        private void ExportCriticalLog(AssetType assetType)
+        {
+            if (criticalLogMap.Keys.Count <= 0)
+                return;
 
-            #endregion Export
+            Helper.ExportCriticalLog(assetType, criticalLogMap);
         }
     }
 }

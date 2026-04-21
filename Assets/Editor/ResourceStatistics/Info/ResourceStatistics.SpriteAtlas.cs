@@ -65,9 +65,16 @@ namespace ResourceStatistics
                 ["Max size"] = platformSetting.maxTextureSize.ToString(),
             };
 
-            if (Editor.EnableLog)
-                UnityEngine.Debug.Log(fieldMap.ToJson());
+            #region Critical logs
 
+            if (defaultSetting.readable)
+                Application.AddCriticalLog("Write Enabled", Importer.assetPath);
+            if (defaultSetting.generateMipMaps)
+                Application.AddCriticalLog("Enabled Mip Maps", Importer.assetPath);
+
+            #endregion
+
+            Log(fieldMap);
             return fieldMap;
         }
 
@@ -91,9 +98,7 @@ namespace ResourceStatistics
                 ["Compressor quality"] = platformImporter.compressionQuality.ToString(),
             };
 
-            if (Editor.EnableLog)
-                UnityEngine.Debug.Log(fieldMap.ToJson());
-
+            Log(fieldMap);
             return fieldMap;
         }
     }

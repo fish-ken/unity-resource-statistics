@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,6 +9,87 @@ using UnityEngine;
 
 namespace ResourceStatistics
 {
+    public static class Util
+    {
+        public static bool IsNullOrEmpty(this string str) => string.IsNullOrEmpty(str);
+        
+        /// <summary>
+        /// Root path of project
+        /// </summary>
+        public static string ProjectRootPath => Directory.GetCurrentDirectory().Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        /// <summary>
+        /// Library path
+        /// </summary>
+        public static string LibraryPath => $"{ProjectRootPath}/Library";
+
+        /// <summary>
+        /// Convert collection string to csv line
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        public static string ToCsvLine(this IEnumerable<string> fields)
+        {
+            if (fields == null || fields.Any() == false)
+                return string.Empty;
+
+            var builder = new StringBuilder();
+
+            foreach (var field in fields)
+            {
+                var convertedField = field;
+
+                if (convertedField.Contains("\""))
+                    convertedField = convertedField.Replace("\"", "\"\"");
+
+                if (convertedField.Contains(",") || convertedField.Contains("\\n"))
+                    convertedField = string.Format("\"{0}\"", convertedField);
+
+                builder.Append($"{convertedField},");
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Convert object to json
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ToJson(this object value)
+        {
+            if (value == null)
+                return string.Empty;
+
+            return JsonConvert.SerializeObject(value);
+        }
+    }
+
+    public static class EnumExtension<T> where T : struct, IConvertible
+    {
+        /// <summary>
+        /// Return true when T is enum type
+        /// </summary>
+        public static bool IsEnum
+        {
+            get => typeof(T).IsEnum;
+        }
+
+        /// <summary>
+        /// Get enumeration of T
+        /// </summary>
+        public static IEnumerable<T> Enumerable
+        {
+            get
+            {
+                if (IsEnum == false)
+                    return null;
+
+                return Enum.GetValues(typeof(T)).Cast<T>();
+            }
+        }
+    }
+
     /// <summary>
     /// Asset type to be analysed
     /// /// </summary>
@@ -37,7 +120,7 @@ namespace ResourceStatistics
             get
             {
                 if (baseExportPath.IsNullOrEmpty())
-                    baseExportPath = $"{PathExtension.ProjectRootPath}/ResourceStatistics/";
+                    baseExportPath = $"{Util.ProjectRootPath}/ResourceStatistics/";
 
                 return baseExportPath;
             }
@@ -76,7 +159,10 @@ namespace ResourceStatistics
         {
             if (path.StartsWith("Packages/"))
                 return true;
-            
+
+            if (path.Contains("Editor/"))
+                return true;
+
             return false;
         }
 
@@ -128,6 +214,35 @@ namespace ResourceStatistics
         }
 
         /// <summary>
+        /// Open a StreamWriter for incremental csv writing
+        /// </summary>
+        public static StreamWriter OpenCsvWriter(AssetType assetType, string name)
+        {
+            var fileName = $"{assetType.GetExportPath()}/{name}.csv";
+            return new StreamWriter(fileName, false, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Export critical log by markdown
+        /// </summary>
+        /// <param name="assetType"></param>
+        /// <param name="logMap"></param>
+        public static void ExportCriticalLog(AssetType assetType, Dictionary<string, StringBuilder> logMap)
+        {
+            var fileName = $"{assetType.GetExportPath()}/{assetType}-CriticalLog.md";
+            var builder = new StringBuilder();
+
+            foreach (var category in logMap.Keys)
+            {
+                builder.AppendLine($"## {assetType} - {category}");
+                builder.AppendLine(logMap[category].ToString());
+                builder.AppendLine("\n");
+            }
+
+            File.WriteAllText(fileName, builder.ToString());
+        }
+
+        /// <summary>
         /// Return file size (by KB)
         /// </summary>
         /// <param name="fullPath"></param>
@@ -142,9 +257,20 @@ namespace ResourceStatistics
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static float GetMemorySize(Object obj)
+        public static float GetMemorySize_kB(UnityEngine.Object obj)
         {
             return UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(obj) / 1024f;
         }
+
+        /// <summary>
+        /// Return asset`s on memory size (by mb)
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static float GetMemorySize_MB(UnityEngine.Object obj)
+        {
+            return UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(obj) / (1024f * 1024f);
+        }
+
     }
 }

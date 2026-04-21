@@ -67,9 +67,7 @@ namespace ResourceStatistics
                 // [""] = defaultSetting.
             };
 
-            if (Editor.EnableLog)
-                Debug.Log(fieldMap.ToJson());
-
+            Log(fieldMap);
             return fieldMap;
         }
 
@@ -98,9 +96,7 @@ namespace ResourceStatistics
                 ["Sample Rate Setting"] = GetSampleRateString(platformImporter),
             };
 
-            if (Editor.EnableLog)
-                Debug.Log(fieldMap.ToJson());
-
+            Log(fieldMap);
             return fieldMap;
         }
 

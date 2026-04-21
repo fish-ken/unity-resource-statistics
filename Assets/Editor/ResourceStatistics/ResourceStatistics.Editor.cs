@@ -26,6 +26,8 @@ namespace ResourceStatistics
         [MenuItem("Tools/Statistics/Resources Statistics/Scan all", priority = 55)]
         private static void ScanAll()
         {
+            EnableLog= false;
+
             foreach (var assetType in EnumExtension<AssetType>.Enumerable)
                 Application.Scan(assetType);
         }
@@ -40,12 +42,12 @@ namespace ResourceStatistics
 
             EnableLog = EditorGUILayout.Toggle("Enable Log", EnableLog);
 
-            // TODO : Filter 
+            // TODO : Filter for specific file name
             
             foreach (var type in assetTypes)
             {
                 if (toggleType.ContainsKey(type) == false)
-                    toggleType[type] = false;
+                    toggleType[type] = true;
 
                 toggleType[type] = EditorGUILayout.Toggle(type.ToString(), toggleType[type]);
             }
